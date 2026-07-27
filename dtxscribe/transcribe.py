@@ -239,6 +239,30 @@ def _band_envs(x, sr, bands, hop=512, win=2048):
     return envs, sr / hop
 
 
+# Corpus tempo prior, mined from 8,105 real DTXMania / GITADORA charts across all 31
+# mixes through GALAXY WAVE DELTA (files/bpm_prior.py). The charted #BPM distribution:
+# median 170, p01 90, p99 280, with 80% of charts in 124-210. Real charts almost never
+# live below ~90 or above ~280, and density peaks 170-190. We use this to resolve the
+# octave ambiguity autocorrelation is prone to (locking onto a half-time backbeat or a
+# double-time pulse): among the octave candidates we prefer the one that lands in the
+# corpus's dense region, but only ever move off the detected tempo on real evidence.
+_BPM_SANE_LO, _BPM_SANE_HI = 90.0, 280.0     # p01 .. p99 hard bounds
+_BPM_DENSE_LO, _BPM_DENSE_HI = 124.0, 210.0  # 80% central mass
+
+
+def _bpm_prior(bpm):
+    """Corpus plausibility of a tempo: 1.0 inside the dense 80% band (124-210),
+    tapering linearly to 0 at the p01/p99 hard bounds (90 / 280). A smooth trapezoid,
+    not a hard gate, so a slightly-out-of-band real tempo is penalized, not killed."""
+    if bpm <= _BPM_SANE_LO or bpm >= _BPM_SANE_HI:
+        return 0.0
+    if _BPM_DENSE_LO <= bpm <= _BPM_DENSE_HI:
+        return 1.0
+    if bpm < _BPM_DENSE_LO:
+        return (bpm - _BPM_SANE_LO) / (_BPM_DENSE_LO - _BPM_SANE_LO)
+    return (_BPM_SANE_HI - bpm) / (_BPM_SANE_HI - _BPM_DENSE_HI)
+
+
 def _estimate_bpm(onset, fps, lo=70, hi=200):
     env = onset - onset.mean()
     ac = np.correlate(env, env, "full")[len(env)-1:]
@@ -253,17 +277,25 @@ def _estimate_bpm(onset, fps, lo=70, hi=200):
         if s > best[0]:
             best = (s, bpm)
     bpm = best[1] or 120.0
+    base = best[0] or 1.0
 
-    # Octave correction. Autocorrelation often locks onto the backbeat / half-time
-    # pulse (e.g. 95 for a real 190 BPM punk song). If the detected tempo is slow and
-    # its double is well supported by the onset envelope, prefer the faster true tempo.
-    # Only engages below 100 BPM so normal 100-180 tempos are never disturbed; a typed
-    # BPM always overrides this anyway.
-    while bpm < 100 and bpm * 2 <= 200 and score(bpm * 2) >= 0.55 * best[0]:
-        bpm *= 2
-    while bpm > 200 and score(bpm / 2) >= 0.55 * best[0]:
-        bpm /= 2
-    return bpm
+    # Corpus-grounded octave correction. Score each octave candidate {T/2, T, 2T} by
+    # how well the onset envelope supports it (autocorrelation, probed even beyond the
+    # primary search bounds) times how plausible it is under the real-chart tempo prior.
+    # The detected tempo T carries the full support weight, so a clean in-band read wins
+    # ties and is never disturbed; a half/double only wins when its faster/slower pulse
+    # is genuinely present AND far better supported by the corpus distribution (e.g. a
+    # 190 BPM punk song detected at its 95 backbeat, or a 220 song caught at 110). If
+    # nothing scores (a genuinely sparse, slow track), the raw pick is kept. A typed BPM
+    # overrides all of this upstream.
+    winner, win_score = bpm, _bpm_prior(bpm)
+    for c in (bpm * 0.5, bpm * 2.0):
+        if c < _BPM_SANE_LO or c > _BPM_SANE_HI:
+            continue
+        sc = (score(c) / base) * _bpm_prior(c) * 0.90  # home bias: move only on evidence
+        if sc > win_score:
+            winner, win_score = c, sc
+    return winner if win_score > 0 else bpm
 
 
 def _pick(env, fps, min_gap=0.06, thr_rel=0.06, thr_abs=0.08):

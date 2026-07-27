@@ -47,6 +47,10 @@ This is available now in public preview, and we keep refining it from testing an
 
 ## Recently shipped
 
+### v1.9.6
+- Smarter tempo detection, so a fast song is less likely to be charted at half speed.
+- Wider Roland hi-hat support (edge and foot-splash notes).
+
 ### v1.9.5
 - Record mode, in public preview.
 - A finer 1.0 to 9.99 difficulty scale.

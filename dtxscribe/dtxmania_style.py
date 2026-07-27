@@ -325,6 +325,105 @@ def _regularize_toms(bar):
     return changed
 
 
+# A tom FILL is one coherent rhythmic figure -- straight 16ths, an 8th/16th-note triplet, or a
+# sextuplet -- but `_regularize_toms` de-jitters each tom lane on its OWN, so the HT/LT/FT of a
+# single fill can each resolve to a different subdivision and the fill reads as jitter instead of
+# a pattern. This pass (DTXMania mode only) pools every tom onset of a fast run and snaps the
+# WHOLE run to the single coarsest subdivision it collectively fits, so the fill lands on one
+# clean grid. It preserves the onset count and which tom plays each onset (the melodic contour --
+# which tom is high / low / floor -- is decided separately in fullkit's tom-contour pass); only
+# the timing is regularized, and only toward the NEAREST real subdivision (faithful). A run that
+# fits no subdivision within tolerance (genuine rubato / scatter) is left exactly as detected.
+_FILL_GRIDS = [8, 12, 16, 24, 32]   # 8th, 8th-triplet, 16th, sextuplet/16th-triplet, 32nd
+FILL_MIN = 3                        # a run of >=3 fast consecutive toms = a fill
+_FILL_FAST = 1.4 / 16.0             # consecutive toms within ~1.4x a 16th = one fast run
+_FILL_TOL = 0.25                    # onset must sit within 1/4 of a grid cell for that grid to fit
+
+
+def _regularize_tom_fills(bar, barlen=1):
+    """Snap each tom FILL to the single idiomatic subdivision it best fits (DTXMania mode only).
+
+    A fill is a run of >=FILL_MIN fast consecutive tom onsets pooled across HT/LT/FT. The whole
+    run is quantized onto ONE subdivision (the coarsest of _FILL_GRIDS every onset sits within
+    _FILL_TOL of) so it reads as a coherent pattern; onset count and per-onset lane are preserved.
+    Cross-lane unisons are kept; a same-lane collision moves to the nearest free slot. A run that
+    fits no subdivision, or that cannot be laid out inside the bar, is left as detected. Returns
+    1 if anything changed."""
+    pooled = []
+    for ch in _TOMS:
+        sm = bar.get(ch)
+        if not sm:
+            continue
+        for p, slot in sm.items():
+            pooled.append((float(p), ch, p, slot))
+    if len(pooled) < FILL_MIN:
+        return 0
+    pooled.sort(key=lambda x: x[0])
+
+    # segment into fast consecutive runs
+    runs = []
+    cur = [pooled[0]]
+    for prev, item in zip(pooled, pooled[1:]):
+        if item[0] - prev[0] <= _FILL_FAST + 1e-9:
+            cur.append(item)
+        else:
+            runs.append(cur)
+            cur = [item]
+    runs.append(cur)
+
+    changed = 0
+    for run in runs:
+        if len(run) < FILL_MIN:
+            continue
+        posf = [it[0] for it in run]
+        # coarsest single subdivision the whole pooled run fits within tolerance
+        g = None
+        for cand in _FILL_GRIDS:
+            if all(abs(p * cand - round(p * cand)) <= _FILL_TOL for p in posf):
+                g = cand
+                break
+        if g is None:
+            continue   # fits no clean subdivision -> genuine scatter/rubato, leave the fill alone
+        gmax = int(round(float(barlen) * g))
+        if gmax < 1:
+            continue
+        used = {ch: set() for ch in _TOMS}
+        placement = []   # (channel, orig_pos, new_pos, slot)
+        abort = False
+        for _pf, ch, opos, slot in run:
+            gi = int(round(_pf * g))
+            if gi in used[ch]:
+                # nearest free slot on the same lane so no onset is lost to a collision
+                for d in (1, -1, 2, -2, 3, -3):
+                    if 0 <= gi + d < gmax and (gi + d) not in used[ch]:
+                        gi += d
+                        break
+                else:
+                    abort = True
+                    break
+            if not (0 <= gi < gmax):
+                abort = True
+                break
+            used[ch].add(gi)
+            placement.append((ch, opos, Fraction(gi, g), slot))
+        if abort:
+            continue
+        # commit per lane: swap the run's old onsets for the snapped ones
+        for ch in _TOMS:
+            moves = [(op, npos, slot) for (c, op, npos, slot) in placement if c == ch]
+            if not moves:
+                continue
+            sm = dict(bar.get(ch, {}))
+            for op, _npos, _slot in moves:
+                sm.pop(op, None)
+            for _op, npos, slot in moves:
+                sm[npos] = slot
+            if sm != bar.get(ch):
+                bar[ch] = sm
+                changed = 1
+    return changed
+
+
 # Cymbals read messy for the same reason the hats did: crash / ride / open-hat onsets arrive
 # a few ms off the beat, so an accent that should sit cleanly on a downbeat or 8th instead
 # lands between grid lines. Snap each cymbal onset to the coarsest of these subdivisions it
@@ -385,6 +484,12 @@ def apply(events, barlens, bpm, tier="advanced", aggressive=True, group_cymbals=
         changed += _regularize_timekeeping(bar)
         # 2b. whole-kit normalization: de-jitter the toms (and snare-roll) onsets too.
         changed += _regularize_toms(bar)
+        # 2b-2. DTXMania only: after the per-lane de-jitter, determine the fill PATTERN --
+        #       snap each fast tom run to the one subdivision the whole fill fits so it reads
+        #       as a coherent figure, not per-lane jitter (pairs with fullkit's contour pass,
+        #       which decides which tom is high/low/floor). Faithful path leaves toms as detected.
+        if aggressive:
+            changed += _regularize_tom_fills(bar, barlens[i] if i < len(barlens) else 1)
         # 2c. ...and the cymbals (crash / ride / open-hat) -- neat across the WHOLE kit,
         #     not just the hats: accents land on the beat instead of between grid lines.
         changed += _regularize_cymbals(bar)

@@ -9,7 +9,8 @@ GRID = 64  # slots per whole-note
 MAP = {
     36: ("13", "bd"), 35: ("13", "bd"),
     38: ("12", "sd"), 40: ("12", "sd"), 37: ("12", "sd"),
-    42: ("11", "hh"), 44: ("1B", "lp"), 46: ("18", "ho"),
+    # Hi-hat bow + Roland edge notes (22 closed edge, 26 open edge) collapse to their bow lane.
+    42: ("11", "hh"), 22: ("11", "hh"), 44: ("1B", "lp"), 46: ("18", "ho"), 26: ("18", "ho"),
     48: ("14", "ht"), 50: ("14", "ht"),
     45: ("15", "lt"), 47: ("15", "lt"),
     41: ("17", "ft"), 43: ("17", "ft"),

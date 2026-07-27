@@ -4,7 +4,7 @@ Turn a drum tab (or just audio) into a fully playable **DTXMania** chart - **no 
 It fetches the tab, grabs the song, auto-syncs the audio, applies realistic foot technique,
 verifies a human can actually play it, and packages a ready-to-drop `.dtx` zip.
 
-Built from a pipeline verified to place ~99% of charted notes within ±10–20 ms of the real recording.
+Built from a pipeline verified to place ~99% of charted notes within ±10-20 ms of the real recording.
 
 ![DTXScribe](docs/screenshot.png)
 
@@ -25,7 +25,7 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
   1000+ sites, a **direct audio-file URL**, or upload a file. DTXScribe auto-syncs it to the chart.
 - **Full song by default.** Keep the complete track, quiet the drums, or fully remove them (arcade feel).
 - **Difficulty tiers that rate, not restrict.** Pick a level - **Basic / Advanced / Extreme / Master** -
-  or let **Auto** derive it from a 0.00–9.99 score rated against a skilled-player reference. The tier is a
+  or let **Auto** derive it from a 0.00-9.99 score rated against a skilled-player reference. The tier is a
   **rating of density and complexity, not a note-value ceiling**: a chart of any difficulty keeps whatever
   quarter / 8th / 16th / triplet / 32nd notes the song actually plays (real GITADORA charts of every tier
   mix note values freely). The output `.dtx` is named by tier (`bsc` / `adv` / `ext` / `mstr`), the
@@ -117,8 +117,8 @@ touched.
   samples. Manual in Transcribed style; in DTXMania style it's automatic and tier-gated (and the left foot
   never plays a hi-hat chick and a double kick on the same tick).
 - **Difficulty** - choose a tier (Basic / Advanced / Extreme / Master) or let **Auto** map it from a
-  0.00–9.99 score (note density, peak bursts, limb speed, kit variety), referenced to a player with some
-  drum skill. Tier boundaries: Basic < 3.00 · Advanced 3.00–5.99 · Extreme 6.00–8.49 · Master ≥ 8.50. The
+  0.00-9.99 score (note density, peak bursts, limb speed, kit variety), referenced to a player with some
+  drum skill. Tier boundaries: Basic < 3.00 · Advanced 3.00-5.99 · Extreme 6.00-8.49 · Master ≥ 8.50. The
   tier is a **rating only - it never caps note values**: the chart keeps the song's real 16th / triplet /
   32nd content at any difficulty (grounded in 4,700+ real GITADORA charts, where even Basic charts contain
   16ths and triplets). The chart file is named by tier (`bsc.dtx` / `adv.dtx` / `ext.dtx` / `mstr.dtx`) in

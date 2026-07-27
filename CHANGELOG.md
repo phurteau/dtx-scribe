@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.9.6
+
+Accuracy release. Better tempo detection and wider hi-hat support, grounded on a corpus of real charts. Still a public preview, so some rough edges may remain.
+
+- **Smarter tempo detection.** Audio transcription and Record mode now resolve the tempo octave more reliably, so a fast song is far less likely to be charted at half speed (or a slow one at double). The picker is grounded on the tempo distribution of thousands of real charts and still yields to a tempo you type in.
+- **Roland hi-hat foot and edge.** Hi-hat edge and foot-splash notes that some Roland modules send now map to the right lane instead of being dropped.
+
 ## v1.9.5
 
 Public preview. Record mode, a finer difficulty scale, and remappable keyboard keys. This is a preview build, so some rough edges and bugs may still be present.
@@ -315,7 +322,7 @@ Cleaner, more playable audio-only charts, difficulty that actually simplifies, a
 Difficulty tiers, required metadata, and a standalone-exe reliability fix.
 
 - **Difficulty tiers.** Basic / Advanced / Extreme / Master picker; the `.dtx` is named by tier
-  (`bsc` / `adv` / `ext` / `mstr`) in its `set.def` slot. Auto-derives from the 0.00–9.99 score.
+  (`bsc` / `adv` / `ext` / `mstr`) in its `set.def` slot. Auto-derives from the 0.00-9.99 score.
 - **Title and Artist are required** (client validation + server guard).
 - **Standalone exe launch fix.** The windowed build's local server crashed on startup
   (`'NoneType' object has no attribute 'isatty'`); it now starts cleanly and shows the native window, with
