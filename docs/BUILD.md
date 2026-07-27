@@ -18,6 +18,13 @@ Output lands in `dist/DTXScribe/` - a folder containing `DTXScribe.exe` plus an
 `_internal/` folder with all dependencies (torch, ffmpeg, deno, the web UI, and
 the drum-kit samples). Zip that whole folder to distribute.
 
+The spec makes the folder **release-ready automatically**: it reads
+`dtxscribe.__version__`, embeds it as the exe's Windows version resource
+(visible in Properties -> Details), and drops `uninstall.cmd`, a `VERSION.txt`
+and a portable `README.txt` next to `DTXScribe.exe`. So the zip already carries
+the uninstaller the README points at and states which build it is - no manual
+copy step. (`version_info.txt` is a generated throwaway and is git-ignored.)
+
 The build is **onedir** (a folder, not a single file) because the PyTorch payload
 doesn't pack cleanly into a one-file exe. Total size is ~750 MB unzipped.
 

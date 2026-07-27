@@ -9,6 +9,7 @@ env/
 # ---- PyInstaller build output ----
 build/
 *.spec.bak
+version_info.txt
 
 # ---- DTXScribe working + distribution artifacts ----
 jobs/*
