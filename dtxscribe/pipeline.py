@@ -336,10 +336,15 @@ def run(opts, workdir, assets_dir, progress):
         from . import dtxmania_style, pattern_match
         # Cymbal grouping is handled uniformly by the Lane-grouping post-step (6d-2), so the
         # DTXMania regularizer no longer folds cymbals itself.
+        tidy_cym = str(opts.get("tidy_cymbals", "false")).lower() == "true"
         events, nchg = dtxmania_style.apply(events, barlens, bpm, tier_key,
-                                            aggressive=True, group_cymbals=False)
+                                            aggressive=True, group_cymbals=False,
+                                            tidy_cymbals=tidy_cym)
         log(f"DTXMania style: whole groove rewritten to real GITADORA patterns; "
             f"tom fills, crashes and feet kept as the fill layer ({nchg} edits).")
+        if tidy_cym:
+            log("DTXMania tidy cymbals: over-detected crash/ride density thinned "
+                "(pooled onsets within 100ms merged to the earliest, kept in place).")
         # Authentic charts add left-foot technique, tier-gated (real data: Basic/Advanced
         # ~none, Extreme double bass, Master hi-hat chick + double bass). Feet fill the
         # gaps now that the hands are regularized, so no manual toggle is needed.

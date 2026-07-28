@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.9.7
+
+Refinement release. An optional cleanup for busy cymbals in DTXMania mode. Still a public preview, so some rough edges may remain.
+
+- **Tidy cymbals (optional).** DTXMania mode gains an off-by-default "Tidy cymbals" toggle that thins over-detected crash and ride density for a cleaner read. Pooled crash and ride hits landing within 100 ms collapse to the earliest one, kept in place. It is cosmetic and accuracy-neutral: kick, snare, toms, open hi-hat, and both feet are untouched.
+
 ## v1.9.6
 
 Accuracy release. Better tempo detection and wider hi-hat support, grounded on a corpus of real charts. Still a public preview, so some rough edges may remain.

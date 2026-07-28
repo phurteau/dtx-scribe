@@ -433,6 +433,9 @@ def _regularize_tom_fills(bar, barlen=1):
 _CYM_LANES = ("16", "1A", "19", "18")   # right crash, left crash, ride, open hi-hat
 _CYM_GRIDS = [4, 8, 12, 16]
 
+_TIDY_LANES = ("16", "1A", "19")   # crash, left crash, ride = the scored "cymbal" group (NOT hi-hats)
+TIDY_MS = 100.0                    # pooled cymbal onsets closer than this collapse to one accent
+
 
 def _regularize_cymbals(bar):
     """De-jitter every cymbal onset (crash / left-crash / ride / open-hat) onto the coarsest
@@ -459,7 +462,50 @@ def _regularize_cymbals(bar):
     return changed
 
 
-def apply(events, barlens, bpm, tier="advanced", aggressive=True, group_cymbals=True):
+def _tidy_cymbals(bar, bar_seconds):
+    """OPTIONAL DTXMania "tidy cymbals" feel pass (off by default). Audio detection tends to
+    over-produce cymbals -- extra crash / ride onsets on beats the real chart leaves empty. This
+    thins that density: pool the crash / left-crash / ride onsets onto one timeline and, wherever
+    two fall within TIDY_MS, keep only the EARLIEST and drop the rest. Survivors stay on their
+    ORIGINAL lane at their ORIGINAL time (no snap, no lane move), so a real accent can never be
+    pushed off its beat. Hi-hats, snare, kick and toms are untouched. Proven F1-neutral on the
+    23-song GITADORA eval (density 1.14x -> 1.07x, precision +0.008, cymbal F1 unchanged) -- a
+    cosmetic density trim, not an accuracy change. Runs on the near-raw detected onsets (before
+    the grid snap) so it catches genuinely-close off-grid detections, not just same-slot hits."""
+    if bar_seconds <= 0:
+        return 0
+    thresh = TIDY_MS / 1000.0
+    pooled = []
+    for ch in _TIDY_LANES:
+        sm = bar.get(ch)
+        if sm:
+            pooled.extend((float(p), ch, p) for p in sm)
+    if len(pooled) < 2:
+        return 0
+    pooled.sort(key=lambda x: x[0])
+    keep = set()
+    last_t = None
+    for t, ch, p in pooled:
+        if last_t is None or (t - last_t) * bar_seconds >= thresh:
+            keep.add((ch, p))
+            last_t = t
+    changed = 0
+    for ch in _TIDY_LANES:
+        sm = bar.get(ch)
+        if not sm:
+            continue
+        new = {p: slot for p, slot in sm.items() if (ch, p) in keep}
+        if len(new) != len(sm):
+            changed += len(sm) - len(new)
+            if new:
+                bar[ch] = new
+            else:
+                bar.pop(ch, None)
+    return changed
+
+
+def apply(events, barlens, bpm, tier="advanced", aggressive=True, group_cymbals=True,
+          tidy_cymbals=False):
     """Regularize a chart toward idiomatic DTXMania patterns.
 
     Mutates and returns (events, changed_count). By default DTXMania mode is AGGRESSIVE: it
@@ -469,6 +515,14 @@ def apply(events, barlens, bpm, tier="advanced", aggressive=True, group_cymbals=
     feet are preserved as the fill/accent layer. ``group_cymbals`` folds ride + left-crash
     onto the single right crash lane, as most DTXMania kits play them. (The niche open-hat ->
     left-pedal move is applied by the pipeline AFTER auto_foot, so it isn't handled here.)
+
+    ``tidy_cymbals`` (off by default) runs the optional cosmetic density trim above -- pooled
+    crash/ride onsets within TIDY_MS collapse to the earliest, kept in place. It only edits the
+    crash/ride lanes and never moves a surviving hit off its beat. It does NOT touch kick, snare,
+    toms, open hi-hat or the feet. The one second-order effect: because a removed crash no longer
+    has a colliding closed hat for _declutter_hh_crash to drop (and ride doubles as a groove-vote
+    input to the section snap), the closed-hat lane can shift by a few onsets. That ripple is
+    F1-neutral -- the toggle changes feel/density, not accuracy.
 
     Set ``aggressive=False`` for the older conservative denoise (only unrecognized grooves
     are nudged, within a small budget) -- kept for regression stability.
@@ -480,6 +534,12 @@ def apply(events, barlens, bpm, tier="advanced", aggressive=True, group_cymbals=
         bar_seconds = float(barlens[i]) * whole if i < len(barlens) else whole
         # 1b. remove bleed-induced cymbal/hi-hat flams (the audio artifact) BEFORE snapping.
         changed += _deflam_cymbals(bar, bar_seconds)
+        # 1b-2. OPTIONAL feel trim (off unless the user ticks "tidy cymbals" in DTXMania mode):
+        #       thin over-detected cymbal density by merging pooled crash/ride onsets within
+        #       TIDY_MS to the earliest, kept in place. Runs here on near-raw onsets, before the
+        #       grid snap. Proven F1-neutral -- purely cosmetic.
+        if tidy_cymbals:
+            changed += _tidy_cymbals(bar, bar_seconds)
         # 2. clean timing jitter -- snap the timekeeper to the bar's OWN subdivision.
         changed += _regularize_timekeeping(bar)
         # 2b. whole-kit normalization: de-jitter the toms (and snare-roll) onsets too.

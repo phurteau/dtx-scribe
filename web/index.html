@@ -289,7 +289,7 @@
   <button class="updx" id="updX" type="button" title="Dismiss">✕</button>
 </div>
 <header>
-  <h1>DTXScribe</h1><span class="ver" id="verLbl">v1.9.6</span><span class="verstat hidden" id="verStat"></span>
+  <h1>DTXScribe</h1><span class="ver" id="verLbl">v1.9.7</span><span class="verstat hidden" id="verStat"></span>
   <span class="tag">tab / audio → DTXMania chart</span>
   <div class="tools">
     <button class="hdrreset" id="resetForm" type="button" title="Clear everything and start over">↻ Reset</button>
@@ -496,7 +496,8 @@
         <div class="seg" id="stdseg" style="margin-top:10px"><button data-v="raw">Raw</button><button data-v="standardize" class="active">Clean Up</button></div>
         <div class="hint" id="stdLock" style="margin-top:8px;display:none"><b>DTXMania</b> style is selected above - it always uses the cleaned-up base, so this setting doesn't apply.</div></div>
       <div class="adv" id="dtxopts" style="display:none"><div class="head">DTXMania Chart Options</div>
-        <label class="chk" style="margin-top:6px"><input type="checkbox" id="ohLpToggle"><span><b>Open hi-hat to LP</b> <span class="hint" style="margin:0">- moves open hi-hats to the left-foot pedal. Rare, but some players prefer it.</span></span></label></div>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" id="ohLpToggle"><span><b>Open hi-hat to LP</b> <span class="hint" style="margin:0">- moves open hi-hats to the left-foot pedal. Rare, but some players prefer it.</span></span></label>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" id="tidyCymToggle"><span><b>Tidy cymbals</b> <span class="hint" style="margin:0">- thins over-detected crash/ride density for a cleaner read. Cosmetic; no effect on accuracy.</span></span></label></div>
       <div class="adv"><div class="head">Lane Grouping</div>
         <div class="hint">Combine drum lanes the way a DTXMania kit reads them. This changes the chart's lanes, not how faithfully the notes are placed.</div>
         <select id="laneGroupSel" style="margin-top:10px">
@@ -855,7 +856,7 @@ $('#genBtn').onclick=async()=>{
   if(tabSource==='url'&&_url)fd.append('songsterr_url',_url);
   if(tabSource==='file'&&_tabFile)fd.append('tab_file',_tabFile);
   fd.append('audio_source',audSource);fd.append('drum_mode',drumMode);
-  fd.append('auto_sync',$('#autoSync').checked);fd.append('style',stdMode);fd.append('standardize',stdMode==='raw'?'false':'true');fd.append('notes_style',noteStyle);fd.append('openhat_lp',$('#ohLpToggle').checked?'true':'false');
+  fd.append('auto_sync',$('#autoSync').checked);fd.append('style',stdMode);fd.append('standardize',stdMode==='raw'?'false':'true');fd.append('notes_style',noteStyle);fd.append('openhat_lp',$('#ohLpToggle').checked?'true':'false');fd.append('tidy_cymbals',$('#tidyCymToggle').checked?'true':'false');
   {const g=$('#laneGroupSel')?$('#laneGroupSel').value:'full';fd.append('lane_grouping',g);
    fd.append('grp_ride',($('#grpRide')&&$('#grpRide').checked)?'true':'false');
    fd.append('grp_openhat',($('#grpOpenhat')&&$('#grpOpenhat').checked)?'true':'false');
