@@ -1,7 +1,7 @@
 """DTXScribe - automated DTXMania chart generator."""
 import os as _os, shutil as _shutil
 
-__version__ = "1.9.7"
+__version__ = "1.9.8"
 
 
 def _appdata_base():

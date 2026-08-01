@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.9.8
+
+Housekeeping release. The uninstaller now cleans up one more thing DTXScribe leaves behind. Still a public preview, so some rough edges may remain.
+
+- **Uninstaller now covers the deno runtime.** `uninstall.cmd` now finds the deno JavaScript runtime DTXScribe adds under `%LOCALAPPDATA%\deno` and offers to remove it. Because deno is a general-purpose runtime other tools on your PC may share, it is a separate opt-in prompt that defaults to no, kept apart from the unconditional cleanup of DTXScribe's own model weights, cache, logs and shortcuts. Two warning messages that could render incorrectly were also tidied.
+
 ## v1.9.7
 
 Refinement release. An optional cleanup for busy cymbals in DTXMania mode. Still a public preview, so some rough edges may remain.
